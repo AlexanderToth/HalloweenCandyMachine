@@ -11,7 +11,7 @@
 // Pin  6: Teensy++ 2.0 has the LED on pin 6
 // Pin 13: Teensy 3.0 has the LED on pin 13
 
-#define SENSORPIN 4
+#define SENSORPIN 5
 
 #define FORWARDPINA 8
 #define FORWARDPINB 9
@@ -37,6 +37,7 @@ void enableRelay(MotorDirection direction)
 {
   if (direction == Forward)
   {
+    Serial.println("Forward");
     digitalWrite(BACKWARDPINA, LOW);
     digitalWrite(BACKWARDPINB, LOW);
     digitalWrite(FORWARDPINA, HIGH);
@@ -44,13 +45,17 @@ void enableRelay(MotorDirection direction)
   }
   else if (direction == Backward)
   {
-    digitalWrite(FORWARDPINA, LOW);
-    digitalWrite(FORWARDPINB, LOW);
-    digitalWrite(BACKWARDPINA, HIGH);
-    digitalWrite(BACKWARDPINB, HIGH);
+    Serial.println("Backward");
+    if (motorDirection != direction) {
+      digitalWrite(FORWARDPINA, LOW);
+      digitalWrite(FORWARDPINB, LOW);
+      digitalWrite(BACKWARDPINA, HIGH);
+      digitalWrite(BACKWARDPINB, HIGH);
+    }
   }
   else if (direction == Off)
   {
+    Serial.println("Off");
     digitalWrite(FORWARDPINA, LOW);
     digitalWrite(FORWARDPINB, LOW);
     digitalWrite(BACKWARDPINA, LOW);
@@ -58,7 +63,7 @@ void enableRelay(MotorDirection direction)
   }
   else
   {
-    Serial.write("Invalid option " + direction);
+    Serial.println("Invalid option " + direction);
   }
   motorDirection = direction;
 }
@@ -70,12 +75,12 @@ void setup()
 
   // initialize the sensor pin as an input:
   pinMode(SENSORPIN, INPUT);
-  pinMode(FORWARDPINA, INPUT);
-  pinMode(FORWARDPINB, INPUT);
-  pinMode(BACKWARDPINA, INPUT);
-  pinMode(BACKWARDPINB, INPUT);
-  pinMode(DISPENSEPIN, INPUT);
-  pinMode(REWINDPIN, INPUT);
+  pinMode(FORWARDPINA, OUTPUT);
+  pinMode(FORWARDPINB, OUTPUT);
+  pinMode(BACKWARDPINA, OUTPUT);
+  pinMode(BACKWARDPINB, OUTPUT);
+  pinMode(DISPENSEPIN, INPUT_PULLUP);
+  pinMode(REWINDPIN, INPUT_PULLUP);
 
   digitalWrite(SENSORPIN, HIGH); // turn on the pullup
 
@@ -87,19 +92,22 @@ void loop()
   // read the state of the pushbutton value:
   sensorState = digitalRead(SENSORPIN);
 
-  if (digitalRead(REWINDPIN) == HIGH)
+  if (digitalRead(REWINDPIN) == LOW)
   {
     // Rewind requested
+    Serial.println("Rewind down");
     enableRelay(MotorDirection::Backward);
   }
-  else if (digitalRead(DISPENSEPIN) == HIGH)
+  else if (digitalRead(DISPENSEPIN) == LOW)
   {
     // Begin dispensing
+    Serial.println("Begin dispensing");
     enableRelay(MotorDirection::Forward);
   }
   else if (motorDirection == Backward)
   {
     // Dispense pin not actively depressed, disable motor
+    Serial.println("Dispense pin off, motor off");
     enableRelay(MotorDirection::Off);
   }
 
@@ -111,6 +119,7 @@ void loop()
     digitalWrite(LEDPIN, HIGH);
     if (motorDirection == Forward)
     {
+      Serial.println("Motor off");
       enableRelay(MotorDirection::Off);
     }
   }
