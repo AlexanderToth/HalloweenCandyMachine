@@ -17,6 +17,7 @@
 #define FORWARDPINB 9
 #define BACKWARDPINA 10
 #define BACKWARDPINB 11
+#define FLICKERINGLIGHTPIN 12
 
 #define DISPENSEPIN 12
 #define REWINDPIN 13
@@ -27,6 +28,9 @@ enum MotorDirection
   Backward,
   Off
 };
+
+millisDelay flickeringLightWaiting;
+millisDelay flickeringLightOn;
 
 // variables will change:
 int sensorState = 0, lastState = 0, motorDirection = MotorDirection::Off; // variable for reading the pushbutton status
@@ -70,6 +74,8 @@ void enableRelay(MotorDirection direction)
 
 void setup()
 {
+  randomSeed(analogRead(0));
+
   // initialize the LED pin as an output:
   pinMode(LEDPIN, OUTPUT);
 
@@ -89,6 +95,15 @@ void setup()
 
 void loop()
 {
+  if (!flickeringLightOn.isRunning() && !flickeringLightWaiting.isRunning()) {
+    flickeringLightWaiting.start(10 * random() * 0.5);
+    digitalWrite(FLICKERINGLIGHTPIN, LOW);
+  }
+  if (flickeringLightWaiting.justFinished()) {
+    digitalWrite(FLICKERINGLIGHTPIN, HIGH);
+    flickeringLightOn.start(5 * random() * 0.5);
+  }
+
   // read the state of the pushbutton value:
   sensorState = digitalRead(SENSORPIN);
 
