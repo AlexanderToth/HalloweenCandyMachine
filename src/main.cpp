@@ -1,6 +1,6 @@
 #include <millisDelay.h>
 #include <Arduino.h>
-
+#include <stdlib.h>
 /*
   IR Breakbeam sensor demo!
 */
@@ -17,7 +17,8 @@
 #define FORWARDPINB 9
 #define BACKWARDPINA 10
 #define BACKWARDPINB 11
-#define FLICKERINGLIGHTPIN 12
+//#define FLICKERINGLIGHTPIN 3
+#define SOUNDEFFECTPIN 3
 
 #define DISPENSEPIN 12
 #define REWINDPIN 13
@@ -31,6 +32,8 @@ enum MotorDirection
 
 millisDelay flickeringLightWaiting;
 millisDelay flickeringLightOn;
+millisDelay soundEffectDelay;
+millisDelay soundMachineRunning;
 
 // variables will change:
 int sensorState = 0, lastState = 0, motorDirection = MotorDirection::Off; // variable for reading the pushbutton status
@@ -85,6 +88,8 @@ void setup()
   pinMode(FORWARDPINB, OUTPUT);
   pinMode(BACKWARDPINA, OUTPUT);
   pinMode(BACKWARDPINB, OUTPUT);
+  //pinMode(FLICKERINGLIGHTPIN, OUTPUT);
+  pinMode(SOUNDEFFECTPIN, OUTPUT);
   pinMode(DISPENSEPIN, INPUT_PULLUP);
   pinMode(REWINDPIN, INPUT_PULLUP);
 
@@ -95,17 +100,25 @@ void setup()
 
 void loop()
 {
-  if (!flickeringLightOn.isRunning() && !flickeringLightWaiting.isRunning()) {
-    flickeringLightWaiting.start(10 * random() * 0.5);
-    digitalWrite(FLICKERINGLIGHTPIN, LOW);
-  }
-  if (flickeringLightWaiting.justFinished()) {
-    digitalWrite(FLICKERINGLIGHTPIN, HIGH);
-    flickeringLightOn.start(5 * random() * 0.5);
-  }
+  //Serial.print(flo); Serial.print(" = On Finished; Light wait "); Serial.println(flw);
+  // if (flickeringLightOn.justFinished() || (!flickeringLightOn.isRunning() && !flickeringLightWaiting.isRunning())) { 
+  //   Serial.println("Start waiting for flicker ");
+  //   //flickeringLightWaiting.start(random(1, 3) * 500);
+  //   digitalWrite(FLICKERINGLIGHTPIN, LOW);
+  // }
+  // if (flickeringLightWaiting.justFinished()) {
+  //   Serial.println("Flicker on");
+  //   //Serial.println(flickeringLightWaiting.isRunning());
+  //   digitalWrite(FLICKERINGLIGHTPIN, HIGH);
+  //   flickeringLightOn.start(random(1,5) * 500);//5 * random(0, 1) * 0.5 * 1000);
+  // }
 
   // read the state of the pushbutton value:
   sensorState = digitalRead(SENSORPIN);
+
+  if (soundMachineRunning.justFinished()) {
+     Serial.println("Sound machine done");
+  }
 
   if (digitalRead(REWINDPIN) == LOW)
   {
@@ -117,13 +130,29 @@ void loop()
   {
     // Begin dispensing
     Serial.println("Begin dispensing");
-    enableRelay(MotorDirection::Forward);
+    Serial.println(soundMachineRunning.isRunning());
+    if (!soundMachineRunning.isRunning()) {
+      // Wait a 1.5 seconds for the sound machine then start dispensing
+      digitalWrite(SOUNDEFFECTPIN, HIGH);
+      soundMachineRunning.start(18 * 1000);
+      soundEffectDelay.start(2500);
+    }
+    else if (!soundEffectDelay.isRunning()) {
+      // Sound is playing already and we're not delaying, just dispense
+      enableRelay(MotorDirection::Forward);
+    }
   }
   else if (motorDirection == Backward)
   {
     // Dispense pin not actively depressed, disable motor
     Serial.println("Dispense pin off, motor off");
     enableRelay(MotorDirection::Off);
+    soundEffectDelay.stop();
+  }
+
+  if (soundEffectDelay.justFinished()) {
+    digitalWrite(SOUNDEFFECTPIN, LOW);
+    enableRelay(MotorDirection::Forward);
   }
 
   // check if the sensor beam is broken
