@@ -18,6 +18,7 @@
 #define BACKWARDPINA 10
 #define BACKWARDPINB 11
 //#define FLICKERINGLIGHTPIN 3
+#define DISPENSELIGHTING 4
 #define SOUNDEFFECTPIN 3
 
 #define DISPENSEPIN 12
@@ -88,6 +89,7 @@ void setup()
   pinMode(FORWARDPINB, OUTPUT);
   pinMode(BACKWARDPINA, OUTPUT);
   pinMode(BACKWARDPINB, OUTPUT);
+  pinMode(DISPENSELIGHTING, OUTPUT);
   //pinMode(FLICKERINGLIGHTPIN, OUTPUT);
   pinMode(SOUNDEFFECTPIN, OUTPUT);
   pinMode(DISPENSEPIN, INPUT_PULLUP);
@@ -118,6 +120,7 @@ void loop()
 
   if (soundMachineRunning.justFinished()) {
      Serial.println("Sound machine done");
+    digitalWrite(DISPENSELIGHTING, LOW);
   }
 
   if (digitalRead(REWINDPIN) == LOW)
@@ -134,8 +137,9 @@ void loop()
     if (!soundMachineRunning.isRunning()) {
       // Wait a 1.5 seconds for the sound machine then start dispensing
       digitalWrite(SOUNDEFFECTPIN, HIGH);
+      digitalWrite(DISPENSELIGHTING, HIGH);
       soundMachineRunning.start(18 * 1000);
-      soundEffectDelay.start(2500);
+      soundEffectDelay.start(3500);
     }
     else if (!soundEffectDelay.isRunning()) {
       // Sound is playing already and we're not delaying, just dispense
